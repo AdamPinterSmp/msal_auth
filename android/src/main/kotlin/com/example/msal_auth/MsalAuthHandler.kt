@@ -7,6 +7,7 @@ import com.microsoft.identity.client.MultipleAccountPublicClientApplication
 import com.microsoft.identity.client.Prompt
 import com.microsoft.identity.client.SingleAccountPublicClientApplication
 import com.microsoft.identity.client.configuration.AccountMode
+import com.microsoft.identity.client.exception.MsalException
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -69,7 +70,7 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
                 val scopes: List<String> = call.argument<List<String>>("scopes")!!.toList()
                 val identifier: String? = call.argument("identifier")
                 val authority: String? = call.argument("authority")
-                Thread { acquireTokenSilent(scopes, identifier, authority, result) }.start()
+                runOnBackgroundThread(result) { acquireTokenSilent(scopes, identifier, authority, result) }
             }
 
             "currentAccount" -> getCurrentAccount(result)
@@ -85,7 +86,7 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
 
             "removeAccount" -> {
                 val identifier = call.arguments as String
-                Thread { removeAccount(identifier, result) }.start()
+                runOnBackgroundThread(result) { removeAccount(identifier, result) }
             }
 
             "isSharedDevice" -> isSharedDevice(result)
@@ -213,7 +214,7 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
                     .withCallback(msal.silentAuthenticationCallback(result))
                 val acquireTokenParameters = builder.build()
                 msal.iPublicClientApplication.acquireTokenSilentAsync(acquireTokenParameters)
-            }
+            } ?: msal.setNoCurrentAccountException(result)
         }
     }
 
@@ -302,6 +303,23 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
         }
 
         result.success(msal.iPublicClientApplication.isSharedDevice)
+    }
+
+    /**
+     * Runs [block] on a background thread. Account lookups used by [block] are blocking calls
+     * that throw [MsalException] instead of using a callback, which would crash the thread.
+     *
+     * @param result the result of the method call.
+     * @param block the work to run.
+     */
+    private fun runOnBackgroundThread(result: MethodChannel.Result, block: () -> Unit) {
+        Thread {
+            try {
+                block()
+            } catch (exception: MsalException) {
+                msal.setMsalException(exception, result)
+            }
+        }.start()
     }
 
     /**
