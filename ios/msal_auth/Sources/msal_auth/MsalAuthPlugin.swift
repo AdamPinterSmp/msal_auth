@@ -204,6 +204,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
                 }
             } catch let error as NSError {
                 setMsalError(error: error, result: result)
+                return
             }
         } else {
             pcaConfig = MSALPublicClientApplicationConfig(

@@ -170,6 +170,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
                 }
             } catch let error as NSError {
                 setMsalError(error: error, result: result)
+                return
             }
         } else {
             pcaConfig = MSALPublicClientApplicationConfig(
