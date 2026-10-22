@@ -76,12 +76,14 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
             MsalAuth.authorityType = authorityType
             let authority = dict["authority"] as? String
             let redirectUri = dict["redirectUri"] as? String
+            let keychainSharingGroup = dict["keychainSharingGroup"] as? String
 
             createPublicClientApplication(
                 pcaType: pcaType,
                 clientId: clientId, authority: authority,
                 authorityType: authorityType,
                 redirectUri: redirectUri,
+                keychainSharingGroup: keychainSharingGroup,
                 result: result)
         case "acquireToken":
             guard let dict = call.arguments as? NSDictionary,
@@ -161,12 +163,14 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
     ///   - authority: Authority URL.
     ///   - authorityType: Authority type.
     ///   - redirectUri: Redirect URI. When nil, MSAL derives the default.
+    ///   - keychainSharingGroup: Keychain group of the token cache. When nil, MSAL uses its default group.
     ///   - result: Result of the method call.
     private func createPublicClientApplication(
         pcaType: PublicClientApplicationType,
         clientId: String, authority: String?,
         authorityType: AuthorityType,
         redirectUri: String?,
+        keychainSharingGroup: String?,
         result: @escaping FlutterResult
     ) {
         // Sets broker availability. this is required to avoid error on PCA creation
@@ -211,6 +215,10 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
         } else {
             pcaConfig = MSALPublicClientApplicationConfig(
                 clientId: clientId, redirectUri: redirectUri, authority: nil)
+        }
+
+        if let keychainSharingGroup {
+            pcaConfig.cacheConfig.keychainSharingGroup = keychainSharingGroup
         }
 
         do {

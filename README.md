@@ -215,6 +215,8 @@ You don't need to include any rules for `MSAL Android` library as this is done u
 
 > Without this configuration, your app will not be able to open the [Microsoft Authenticator] app if specified in the broker. Additionally, the `logout` method will throw an exception because it will not be able to find the account in the cache.
 
+> Every app of the same Apple team that uses this default group shares one token cache. Apps with the same client ID then see each other's accounts, and `signOut()` in one app signs the user out of the others. To keep the cache private to your app, add your own keychain group (e.g. your bundle identifier) instead and pass it as `keychainSharingGroup` in `AppleConfig`. The same applies to macOS.
+
 ---
 
 ### `Info.plist` Modification
@@ -330,6 +332,9 @@ final msalAuth = await SingleAccountPca.create(
     // and resolving the Apple Team ID via keychain — which fails on some managed
     // devices with "teamId is missing". Omit to keep the default behavior.
     redirectUri: '<Optional Apple Redirect URI>',
+    // Optional. Keychain group of the token cache (without the Team ID prefix).
+    // Omit to use the MSAL default group, which all apps of your Apple team share.
+    keychainSharingGroup: '<Optional keychain group>',
   ),
 );
 ```

@@ -37,6 +37,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
             MsalAuth.authorityType = authorityType
             let authority = dict["authority"] as? String
             let redirectUri = dict["redirectUri"] as? String
+            let keychainSharingGroup = dict["keychainSharingGroup"] as? String
             let broker = dict["broker"] as? String
 
             createPublicClientApplication(
@@ -44,6 +45,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
                 clientId: clientId, authority: authority,
                 authorityType: authorityType,
                 redirectUri: redirectUri,
+                keychainSharingGroup: keychainSharingGroup,
                 broker: broker,
                 result: result)
         case "acquireToken":
@@ -122,6 +124,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
     ///   - authority: Authority URL.
     ///   - authorityType: Authority type.
     ///   - redirectUri: Redirect URI. When nil, MSAL derives the default.
+    ///   - keychainSharingGroup: Keychain group of the token cache. When nil, MSAL uses its default group.
     ///   - broker: Broker used for authentication. Disabling it routes auth
     ///     through the web view instead of the Microsoft SSO extension.
     ///   - result: Result of the method call.
@@ -130,6 +133,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
         clientId: String, authority: String?,
         authorityType: AuthorityType,
         redirectUri: String?,
+        keychainSharingGroup: String?,
         broker: String?,
         result: @escaping FlutterResult
     ) {
@@ -177,6 +181,10 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin {
         } else {
             pcaConfig = MSALPublicClientApplicationConfig(
                 clientId: clientId, redirectUri: redirectUri, authority: nil)
+        }
+
+        if let keychainSharingGroup {
+            pcaConfig.cacheConfig.keychainSharingGroup = keychainSharingGroup
         }
 
         do {
