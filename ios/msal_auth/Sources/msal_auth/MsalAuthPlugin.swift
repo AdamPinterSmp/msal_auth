@@ -640,8 +640,8 @@ extension MsalAuthPlugin {
                 flutterErrorCode = "SERVER_ERROR"
             case .insufficientDeviceStrength:
                 flutterErrorCode = "INSUFFICIENT_DEVICE_STRENGTH"
-            @unknown default:
-                break
+            default:
+                flutterErrorCode = error.domain
             }
         } else {
             flutterErrorCode = error.domain
