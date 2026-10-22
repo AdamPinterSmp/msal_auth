@@ -324,9 +324,13 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
         }
 
         if MsalAuth.pcaType == PublicClientApplicationType.single {
-            getCurrentAccount { currentAccount in
+            getCurrentAccount { currentAccount, error in
                 guard let currentAccount else {
-                    self.setNoCurrentAccountError(result: result)
+                    if let error {
+                        self.setMsalError(error: error, result: result)
+                    } else {
+                        self.setNoCurrentAccountError(result: result)
+                    }
                     return
                 }
                 self.executeSilentRequest(pca: pca, account: currentAccount, scopes: scopes, authority: authority, result: result)
@@ -343,15 +347,17 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
     }
 
     /// Returns current account. used with single account mode.
+    /// `completion` receives the MSAL error when the account lookup fails, so callers
+    /// do not report it as "no current account".
     private func getCurrentAccount(
         result: FlutterResult? = nil,
-        completion: ((MSALAccount?) -> Void)? = nil
+        completion: ((MSALAccount?, NSError?) -> Void)? = nil
     ) {
         guard let pca = MsalAuth.publicClientApplication else {
             if let result {
                 setPcaInitError(methodName: "getCurrentAccount", result: result)
             }
-            completion?(nil)
+            completion?(nil, nil)
             return
         }
 
@@ -359,7 +365,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
             current, previous, error in
             if let current {
                 result?(self.getCurrentAccountDic(current))
-                completion?(current)
+                completion?(current, nil)
                 return
             }
 
@@ -370,7 +376,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
                     self.setNoCurrentAccountError(result: result)
                 }
             }
-            completion?(nil)
+            completion?(nil, error as NSError?)
         }
     }
 
@@ -382,9 +388,13 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
             return
         }
         
-        getCurrentAccount { currentAccount in
+        getCurrentAccount { currentAccount, error in
             guard let currentAccount else {
-                self.setNoCurrentAccountError(result: result)
+                if let error {
+                    self.setMsalError(error: error, result: result)
+                } else {
+                    self.setNoCurrentAccountError(result: result)
+                }
                 return
             }
             
