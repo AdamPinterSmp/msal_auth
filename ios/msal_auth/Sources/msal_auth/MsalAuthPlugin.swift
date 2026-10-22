@@ -211,19 +211,19 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
                 clientId: clientId, redirectUri: redirectUri, authority: nil)
         }
 
-        if let application = try? MSALPublicClientApplication(
-            configuration: pcaConfig)
-        {
+        do {
+            let application = try MSALPublicClientApplication(
+                configuration: pcaConfig)
             // We will only have a public client application object. Apple MSAL does not have specific class for different account mode (Single & multiple). So we just assigned type that we receives from Dart and then call methods as per the type.
             MsalAuth.publicClientApplication = application
             MsalAuth.pcaType = pcaType
             result(true)
-        } else {
+        } catch let error as NSError {
             // Sets initialization error. This is a custom exception created at Dart side.
             result(
                 FlutterError(
                     code: "PCA_INIT",
-                    message: "Unable to create public client application",
+                    message: "Unable to create public client application: \(error.localizedDescription)",
                     details: nil))
         }
     }
