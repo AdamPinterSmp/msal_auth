@@ -135,7 +135,9 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
                 return
             }
 
-            getAccount(identifier: identifier, result: result)
+            if let account = getAccount(identifier: identifier, result: result) {
+                result(getCurrentAccountDic(account))
+            }
 
         case "getAccounts": getAccounts(result: result)
 
