@@ -386,6 +386,9 @@ if (expiresOn.isBefore(DateTime.now())) {
     // a different policy than the original authentication.
     // Required for B2C scenarios.
     authority: '<Authority URL>',
+    // Optional. Set to true to skip the cached access token, e.g. when an API
+    // rejects a token that has not expired yet.
+    forceRefresh: false,
   );
 
   log('Auth result: ${authResult.toJson()}');

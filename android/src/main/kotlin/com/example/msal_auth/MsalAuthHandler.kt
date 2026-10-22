@@ -70,7 +70,10 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
                 val scopes: List<String> = call.argument<List<String>>("scopes")!!.toList()
                 val identifier: String? = call.argument("identifier")
                 val authority: String? = call.argument("authority")
-                runOnBackgroundThread(result) { acquireTokenSilent(scopes, identifier, authority, result) }
+                val forceRefresh: Boolean = call.argument("forceRefresh") ?: false
+                runOnBackgroundThread(result) {
+                    acquireTokenSilent(scopes, identifier, authority, forceRefresh, result)
+                }
             }
 
             "currentAccount" -> getCurrentAccount(result)
@@ -177,12 +180,14 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
      * @param scopes the list of scopes.
      * @param identifier Account identifier.
      * @param authority authority URL to override cached account's authority.
+     * @param forceRefresh whether to skip the cached access token and refresh it.
      * @param result the result of the method call.
      */
     private fun acquireTokenSilent(
         scopes: List<String>,
         identifier: String? = null,
         authority: String?,
+        forceRefresh: Boolean,
         result: MethodChannel.Result
     ) {
         if (!msal.isPcaInitialized()) {
@@ -198,6 +203,7 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
                     builder.withScopes(scopes.toList())
                         .forAccount(currentAccount)
                         .fromAuthority(authority ?: currentAccount.authority)
+                        .forceRefresh(forceRefresh)
                         .withCallback(msal.silentAuthenticationCallback(result))
                     val acquireTokenParameters = builder.build()
                     msal.iPublicClientApplication.acquireTokenSilentAsync(acquireTokenParameters)
@@ -211,6 +217,7 @@ class MsalAuthHandler(private val msal: MsalAuth) : MethodChannel.MethodCallHand
                 builder.withScopes(scopes.toList())
                     .forAccount(account)
                     .fromAuthority(authority ?: account.authority)
+                    .forceRefresh(forceRefresh)
                     .withCallback(msal.silentAuthenticationCallback(result))
                 val acquireTokenParameters = builder.build()
                 msal.iPublicClientApplication.acquireTokenSilentAsync(acquireTokenParameters)

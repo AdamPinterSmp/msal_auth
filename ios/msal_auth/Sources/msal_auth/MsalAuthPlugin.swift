@@ -123,9 +123,11 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
 
             let identifier = dict["identifier"] as? String
             let authority = dict["authority"] as? String
+            let forceRefresh = dict["forceRefresh"] as? Bool ?? false
 
             acquireTokenSilent(
-                scopes: scopes, identifier: identifier, authority: authority, result: result)
+                scopes: scopes, identifier: identifier, authority: authority,
+                forceRefresh: forceRefresh, result: result)
 
         case "currentAccount": getCurrentAccount(result: result)
 
@@ -323,10 +325,11 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
     ///   - scopes: Scopes to be requested.
     ///   - identifier: Account identifier.
     ///   - authority: Authority URL to override cached account's authority.
+    ///   - forceRefresh: Whether to skip the cached access token and refresh it.
     ///   - result: Result of the method call.
     private func acquireTokenSilent(
         scopes: [String], identifier: String? = nil, authority: String?,
-        result: @escaping FlutterResult
+        forceRefresh: Bool, result: @escaping FlutterResult
     ) {
         guard let pca = MsalAuth.publicClientApplication else {
             setPcaInitError(methodName: "acquireTokenSilent", result: result)
@@ -343,7 +346,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
                     }
                     return
                 }
-                self.executeSilentRequest(pca: pca, account: currentAccount, scopes: scopes, authority: authority, result: result)
+                self.executeSilentRequest(pca: pca, account: currentAccount, scopes: scopes, authority: authority, forceRefresh: forceRefresh, result: result)
             }
             return
         }
@@ -353,7 +356,7 @@ public class MsalAuthPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDeleg
             return
         }
         
-        executeSilentRequest(pca: pca, account: account, scopes: scopes, authority: authority, result: result)
+        executeSilentRequest(pca: pca, account: account, scopes: scopes, authority: authority, forceRefresh: forceRefresh, result: result)
     }
 
     /// Returns current account. used with single account mode.
@@ -518,15 +521,18 @@ extension MsalAuthPlugin {
     ///   - account: Account to acquire token for.
     ///   - scopes: Scopes to be requested.
     ///   - authority: Authority URL to override cached account's authority.
+    ///   - forceRefresh: Whether to skip the cached access token and refresh it.
     ///   - result: Result of the method call.
     fileprivate func executeSilentRequest(
         pca: MSALPublicClientApplication,
         account: MSALAccount,
         scopes: [String],
         authority: String?,
+        forceRefresh: Bool,
         result: @escaping FlutterResult
     ) {
         let silentParams = MSALSilentTokenParameters(scopes: scopes, account: account)
+        silentParams.forceRefresh = forceRefresh
 
         if let authority {
             do {
